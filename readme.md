@@ -6,9 +6,9 @@ Queries Google Places API for nearby bars, restaurants with a decent rating, and
 
 ## Samples
 `/happy-hour 03820`
-![resources/default_dover.png]
+!(resources/default_dover.png)
 `/happy-hour 03820 wings`
-![resources/dover_wings.png]
+!(resources/dover_wings.png)
 
 `/happy-hour 03820 water` <- like near the water, not cause they serve it..
 
