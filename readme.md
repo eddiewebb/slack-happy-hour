@@ -7,12 +7,12 @@ Queries Google Places API for nearby bars, restaurants with a decent rating, and
 ## Samples
 `/happy-hour 03820`
 
-!(/resources/default_dover.png)
+!["Default results for dover"](resources/default_dover.png)
 
 
 `/happy-hour 03820 wings`
 
-!(/resources/dover_wings.png)
+!["Wings in DOver"](resources/dover_wings.png)
 
 
 
