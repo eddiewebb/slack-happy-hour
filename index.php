@@ -167,7 +167,7 @@ function pickFirstQualifyingPlace($places){
 	$forbiddenTypes = array("bakery","cafe","store");
 
 	$winner=null;
-	foreach($places as $place){}
+	foreach($places as $place){
 		//skip what we can with information we know from place summary
 		//     types we want with good rating
 		if( ! array_intersect($acceptableTypes, $place['types'])) {
