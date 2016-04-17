@@ -181,7 +181,7 @@ function pickFirstQualifyingPlace($places){
 		if(  array_intersect($forbiddenTypes, $place['types'])) {
 			continue; //not acceptable
 		}
-		if(! isset($place['rating']) || $place['rating'] < 3.5){
+		if(! isset($place['rating']) || $place['rating'] < 3.8){
 			continue;
 		}
 		if( ! isset($place['photos'])){
