@@ -89,10 +89,46 @@ function loadSecurityTokens(){
 	}
 }
 
+function loadArguments(){
+	$argumentString = filter_input(INPUT_GET, 'text',FILTER_SANITIZE_STRING);
+	if (! $argumentString ){
+		slackError("Must provide zip code!");
+	}
+	$arguments = explode(" ",$argumentString);
+	return $arguments;
+}
 
+function searchForNearbyPlaces($types = array("bar","restaurant")){
+	global $apiKey, $arguments;
+	logTime("startPLaces");
+	$zip = findLatLngForZip($arguments[0]) ;
+	logTime("know zip");
+	$placesInfo =array();
+	foreach($types as $type){
+		$rez=getResponseTo(buildSearchUrl($type, $zip) ,true);
+		logTime($type."s loaded");
+		if(array_key_exists("results", $rez) && sizeof( $rez['results']) > 0 ){
+			$placesInfo=array_merge($placesInfo,$rez['results']);
+			logTime($type."s merged");
+		}
+	}
+	logTime("all merged");
+	shuffle($placesInfo);
+	return $placesInfo;
+}
+
+function buildSearchUrl($type,$zip){
+	global $apiKey, $arguments;
+	$placesUrl="https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=" . $apiKey;
+	//use geoinfo to get nearby places
+	$placesUrl .= "&location=" . $zip;
+	$placesUrl .= "&radius=8000"; //5 miles
+	$placesUrl .= "&opennow"; //...
+	$placesUrl .= "&type=" . $type;
+	return $placesUrl;
+}
 
 function getResponseTo($url, $asArray=false){
-
 	logTime("request Start");
 	$ch = curl_init();
 	logTime("init");
@@ -123,6 +159,7 @@ function getResponseTo($url, $asArray=false){
 	return $result;
 }
 
+
 function pickFirstQualifyingPlace($places){
 	global $apiKey, $arguments;
 	// pubs, bars, etc, not chain restaruants
@@ -130,8 +167,7 @@ function pickFirstQualifyingPlace($places){
 	$forbiddenTypes = array("bakery","cafe","store");
 
 	$winner=null;
-	foreach($places as $place){
-
+	foreach($places as $place){}
 		//skip what we can with information we know from place summary
 		//     types we want with good rating
 		if( ! array_intersect($acceptableTypes, $place['types'])) {
@@ -146,13 +182,11 @@ function pickFirstQualifyingPlace($places){
 		if( ! isset($place['photos'])){
 			continue;
 		}
-
 		// now get more details (reviews) and pick first match
 		if(isMatch($place)){
 			$winner=$place;
 			break;
-		}
-		
+		}	
 	}
 	if( empty($winner)){
 		slackError("No places near " . $arguments[0] . " match the criteria. Try a another keyword such as \"docks\",\"specials\", etc");
@@ -163,21 +197,21 @@ function pickFirstQualifyingPlace($places){
 
 function isMatch(&$place){
 	global $apiKey,$arguments;
-		$placeDetails = getResponseTo("https://maps.googleapis.com/maps/api/place/details/json?placeid=" . $place['place_id'] . "&key=" . $apiKey,true);
+	$placeDetails = getResponseTo("https://maps.googleapis.com/maps/api/place/details/json?placeid=" . $place['place_id'] . "&key=" . $apiKey,true);
 		
-		if( !isset($placeDetails['result']['reviews'])) return false;
-		$acceptable=false;
-		foreach($placeDetails['result']['reviews'] as $review){
-			$checkFor=!empty($arguments[1])?$arguments[1]:"drink";
-			$mention = stripos($review['text'],$checkFor);
-			if($mention) {
-				$acceptable=true;
-				$place = $placeDetails['result'];
-				$place['reason']=substr($review['text'], $mention - 15, 100);
-				if(empty($place['price_level']))$place['price_level']=9;
-				return true;
-			}
+	if( !isset($placeDetails['result']['reviews'])) return false;
+	$acceptable=false;
+	foreach($placeDetails['result']['reviews'] as $review){
+		$checkFor=!empty($arguments[1])?$arguments[1]:"drink";
+		$mention = stripos($review['text'],$checkFor);
+		if($mention) {
+			$acceptable=true;
+			$place = $placeDetails['result'];
+			$place['reason']=substr($review['text'], $mention - 15, 100);
+			if(empty($place['price_level']))$place['price_level']=9;
+			return true;
 		}
+	}
 }
 
 function slackError($message){
@@ -196,34 +230,7 @@ function findLatLngForZip($zipcode){
 	return $geoInfo->results[0]->geometry->location->lat . "," . $geoInfo->results[0]->geometry->location->lng;
 }
 
-function buildSearchUrl($type,$zip){
-	global $apiKey, $arguments;
-	$placesUrl="https://maps.googleapis.com/maps/api/place/nearbysearch/json?key=" . $apiKey;
-	//use geoinfo to get nearby places
-	$placesUrl .= "&location=" . $zip;
-	$placesUrl .= "&radius=8000"; //5 miles
-	$placesUrl .= "&opennow"; //...
-	$placesUrl .= "&type=" . $type;
-	return $placesUrl;
-}
-function searchForNearbyPlaces($types = array("bar","restaurant")){
-	global $apiKey, $arguments;
-	logTime("startPLaces");
-	$zip = findLatLngForZip($arguments[0]) ;
-	logTime("know zip");
-	$placesInfo =array();
-	foreach($types as $type){
-		$rez=getResponseTo(buildSearchUrl($type, $zip) ,true);
-		logTime($type."s loaded");
-		if(array_key_exists("results", $rez) && sizeof( $rez['results']) > 0 ){
-			$placesInfo=array_merge($placesInfo,$rez['results']);
-			logTime($type."s merged");
-		}
-	}
-	logTime("all merged");
-	shuffle($placesInfo);
-	return $placesInfo;
-}
+
 
 function prepareFeaturePhoto(&$place){	
 	global $apiKey;
@@ -232,15 +239,6 @@ function prepareFeaturePhoto(&$place){
 		$place['photo_url'] = "https://maps.googleapis.com/maps/api/place/photo?key=".$apiKey."&maxheight=150&photoreference=" . $place['photos'][0]['photo_reference'];
 	}
 }
-function loadArguments(){
-	$argumentString = filter_input(INPUT_GET, 'text',FILTER_SANITIZE_STRING);
-	if (! $argumentString ){
-		slackError("Must provide zip code!");
-	}
-	$arguments = explode(" ",$argumentString);
-	return $arguments;
-}
-
 function logTime($step){
 	// set true for debug timeing
 	if(false){
