@@ -1,6 +1,7 @@
 <?php
 
-	$time_start = round(microtime(true) * 1000);
+
+logTime(">>>>>>>>>Start");
 
 
 
@@ -107,12 +108,17 @@ echo $response;
 
 
 function getResponseTo($url, $asArray=false){
+
+	logTime("request Start");
 	$ch = curl_init();
+	logTime("init");
 	curl_setopt($ch, CURLOPT_URL, $url);
-	 curl_setopt($ch, CURLOPT_PROXY,""); //no proxyt
+	curl_setopt($ch, CURLOPT_PROXY,""); //no proxyt
 	curl_setopt($ch, CURLOPT_RETURNTRANSFER, 1);
 	$data = curl_exec($ch);
+	logTime("executed");
 	$info = curl_getinfo($ch);
+	logTime("info");
 	if( ! $data || $info['http_code'] != 200 ){
 		$err = "ERROR (http_" . $info['http_code'] . "): ";
 		if(!$data){
@@ -126,10 +132,10 @@ function getResponseTo($url, $asArray=false){
 		curl_close($ch);
 		die();
 	}
-
 	curl_close($ch);
+	logTime("closed");
 	$result = json_decode( $data, $asArray);
-
+	logTime("    request finshed");
 	return $result;
 }
 
@@ -218,14 +224,19 @@ function buildSearchUrl($type,$zip){
 }
 function searchForNearbyPlaces($types = array("bar","restaurant")){
 	global $apiKey, $arguments;
+	logTime("startPLaces");
 	$zip = findLatLngForZip($arguments[0]) ;
+	logTime("know zip");
 	$placesInfo =array();
 	foreach($types as $type){
 		$rez=getResponseTo(buildSearchUrl($type, $zip) ,true);
+		logTime($type."s loaded");
 		if(array_key_exists("results", $rez) && sizeof( $rez['results']) > 0 ){
 			$placesInfo=array_merge($placesInfo,$rez['results']);
+			logTime($type."s merged");
 		}
 	}
+	logTime("all merged");
 	shuffle($placesInfo);
 	return $placesInfo;
 }
@@ -239,8 +250,13 @@ function prepareFeaturePhoto(&$place){
 }
 
 function logTime($step){
-	global $time_start;
-
-	error_log($step . "time:".(round(microtime(true) * 1000)-$time_start));
+	// set true for debug timeing
+	if(false){
+		global $time_start;
+		if(empty($time_start)){
+			$time_start=round(microtime(true) * 1000);
+		}
+		error_log($step . "time:".(round(microtime(true) * 1000)-$time_start));
+	}
 }
 ?>
