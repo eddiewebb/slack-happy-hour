@@ -20,6 +20,7 @@ prepareFeaturePhoto($thisPlace);
 
 //print slack response
 $prices = array(0=>"Free",1=>"Cheap",2=>"Moderate",3=>"Expensive",4=>"Very Expensive",9=>"Unknown");
+$slackEscape = array("<"=>"&lt;",">"=>"&gt;","&"=>"&amp",'"'=>'\\"',"\n"=>" ");
 $response='{
     "response_type": "in_channel",
     "attachments": [
@@ -47,12 +48,16 @@ $response='{
 				 "value":"' . $prices[$thisPlace['price_level']] . '",
 				 "short":true
 				},
-				{"title":"Website",
-				 "value":"' . $thisPlace['website'] . '",
-				 "short":false
-				},
+				' . 
+				(empty($thisPlace['website'])?"":'
+					{"title":"Website",
+					 "value":"' . $thisPlace['website'] . '",
+					 "short":false
+					},') 
+
+				. '
 				{"title":"Reason",
-				 "value":"' . $thisPlace['reason'] . '",
+				 "value":"' . str_replace(array_keys($slackEscape), array_values($slackEscape), $thisPlace['reason']) . '",
 				 "short":false
 				}
 			]
