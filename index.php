@@ -4,55 +4,22 @@
 logTime(">>>>>>>>>Start");
 
 
-
-//grab key from file, be nice and remove any silly charatcres thatv ariod eitors might put on.
-if(file_exists('api.key'))$apiKey = preg_replace('/[^A-Za-z0-9_\-]/', '',file_get_contents('api.key'));
-if(empty($apiKey)){
-	die("Create a file names api.key in this directory. You will need to obtain the key from google cloud console.");
-}
-$prices = array(0=>"Free",1=>"Cheap",2=>"Moderate",3=>"Expensive",4=>"Very Expensive",9=>"Unknown");
-logTime("keyset");
-
-//make sure our peeps, from slack are the client
-if(file_exists('slack.token'))$token = preg_replace('/[^A-Za-z0-9]/', '',file_get_contents('slack.token'));
-$userToken = filter_input(INPUT_GET, 'token',FILTER_SANITIZE_STRING);
-if(! empty($token)  && ($token != $userToken)){
-	slackError("Invalid integration token");
-}
-logTime("tokenset");
-
+loadSecurityTokens();
 
 //get arguments from slack command
-$argumentString = filter_input(INPUT_GET, 'text',FILTER_SANITIZE_STRING);
-if (! $argumentString ){
-	slackError("Must provide zip code!");
-}
-$arguments = explode(" ",$argumentString);
-// 0=>zip code, 1=>optional review key word
-
-logTime("argumentsset");
-
-
+$arguments = loadArguments();
 
 //get all types suitable for happy hour
 $placesInfo = searchForNearbyPlaces();
 
-logTime("allplaces");
-
-
-
 //pick the random winner from the best
 $thisPlace = pickFirstQualifyingPlace($placesInfo);
 
-logTime("thisplace");
 //set a photo to show user
 prepareFeaturePhoto($thisPlace);
 
-logTime("photoed");
-
-
-
 //print slack response
+$prices = array(0=>"Free",1=>"Cheap",2=>"Moderate",3=>"Expensive",4=>"Very Expensive",9=>"Unknown");
 $response='{
     "response_type": "in_channel",
     "attachments": [
@@ -101,9 +68,26 @@ echo $response;
 
 
 
+/**********\
+*
+*
+\************/
 
+function loadSecurityTokens(){
+	global $apiKey;
+	//grab google key from file, be nice and remove any silly charatcres thatv ariod eitors might put on.
+	if(file_exists('api.key'))$apiKey = preg_replace('/[^A-Za-z0-9_\-]/', '',file_get_contents('api.key'));
+	if(empty($apiKey)){
+		die("Create a file names api.key in this directory. You will need to obtain the key from google cloud console.");
+	}
 
-
+	//make sure our peeps, from slack are the client
+	if(file_exists('slack.token'))$token = preg_replace('/[^A-Za-z0-9]/', '',file_get_contents('slack.token'));
+	$userToken = filter_input(INPUT_GET, 'token',FILTER_SANITIZE_STRING);
+	if(! empty($token)  && ($token != $userToken)){
+		slackError("Invalid integration token");
+	}
+}
 
 
 
@@ -247,6 +231,14 @@ function prepareFeaturePhoto(&$place){
 	if($place['photos'][0]['photo_reference']){
 		$place['photo_url'] = "https://maps.googleapis.com/maps/api/place/photo?key=".$apiKey."&maxheight=150&photoreference=" . $place['photos'][0]['photo_reference'];
 	}
+}
+function loadArguments(){
+	$argumentString = filter_input(INPUT_GET, 'text',FILTER_SANITIZE_STRING);
+	if (! $argumentString ){
+		slackError("Must provide zip code!");
+	}
+	$arguments = explode(" ",$argumentString);
+	return $arguments;
 }
 
 function logTime($step){
