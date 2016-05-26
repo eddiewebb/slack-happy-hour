@@ -40,10 +40,6 @@ $response='{
 				 "value":' . $thisPlace['rating'] . ',
 				 "short":true
 				},
-				{"title":"Total Ratings",
-				 "value":' . $thisPlace['user_ratings_total'] . ',
-				 "short":true
-				},
 				{"title":"Price",
 				 "value":"' . $prices[$thisPlace['price_level']] . '",
 				 "short":true
